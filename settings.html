@@ -12,27 +12,27 @@
         input, textarea, button { width: 100%; padding: 12px; margin: 8px 0; background: #000; border: 1px solid #2f3336; color: #fff; border-radius: 8px; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
         button { background: #1d9bf0; cursor: pointer; border: none; font-weight: 600; }
         .back-nav a { color: #1d9bf0; text-decoration: none; font-weight: 500; }
+        .avatar-preview { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; display: block; border: 2px solid #2f3336; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="back-nav"><a href="index.html">← Back to OscTok Feed</a></div>
-        <h2>Account Settings & Privacy</h2>
+        <h2>Account Settings & Profile</h2>
         
         <div class="card">
             <h3>Profile Customization</h3>
+            <img id="current-avatar" class="avatar-preview" src="" alt="Avatar Preview" style="display:none;">
+            <label>Profile Picture:</label>
+            <input type="file" id="avatar-file" accept="image/*">
+            
             <label>Username Handle:</label>
             <input type="text" id="setting-username" placeholder="Username">
+            
             <label>Bio Description:</label>
             <textarea id="setting-bio" placeholder="Tell the world about yourself..."></textarea>
+            
             <button onclick="saveProfileSettings()">Save Changes</button>
-        </div>
-
-        <div class="card">
-            <h3>Safety & Privacy</h3>
-            <p style="font-size: 13px; color: #71767b;">Manage visibility, block tools, and content security configurations.</p>
-            <label><input type="checkbox" id="private-profile"> Make Profile Private</label>
-            <button onclick="alert('Privacy settings updated successfully!')" style="margin-top:15px;">Update Security</button>
         </div>
     </div>
 
@@ -49,6 +49,11 @@
             if (profile) {
                 document.getElementById('setting-username').value = profile.username || '';
                 document.getElementById('setting-bio').value = profile.bio || '';
+                if (profile.avatar_url) {
+                    const img = document.getElementById('current-avatar');
+                    img.src = profile.avatar_url;
+                    img.style.display = 'block';
+                }
             }
         });
 
@@ -56,10 +61,33 @@
             const { data: { user } } = await supabase.auth.getUser();
             const username = document.getElementById('setting-username').value;
             const bio = document.getElementById('setting-bio').value;
+            const avatarInput = document.getElementById('avatar-file');
+            const file = avatarInput.files[0];
 
-            const { error } = await supabase.from('profiles').update({ username, bio }).eq('id', user.id);
+            let avatarUrl = null;
+
+            if (file) {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `avatar_${user.id}_${Date.now()}.${fileExt}`;
+                const { error: uploadError } = await supabase.storage.from('media').upload(fileName, file);
+                
+                if (uploadError) {
+                    alert('Avatar upload failed: ' + uploadError.message);
+                    return;
+                }
+                const { data: publicURLData } = supabase.storage.from('media').getPublicUrl(fileName);
+                avatarUrl = publicURLData.publicUrl;
+            }
+
+            const updateData = { username, bio };
+            if (avatarUrl) updateData.avatar_url = avatarUrl;
+
+            const { error } = await supabase.from('profiles').update(updateData).eq('id', user.id);
             if (error) alert('Error: ' + error.message);
-            else alert('Profile updated successfully!');
+            else {
+                alert('Profile updated successfully!');
+                location.reload();
+            }
         }
     </script>
 </body>
