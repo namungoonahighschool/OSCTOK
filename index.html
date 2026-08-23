@@ -3,48 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>X.com Platform</title>
+    <title>OscTok.Com</title>
+    <!-- Google Fonts: Montserrat -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #000; color: #e7e9ea; margin: 0; padding: 0; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 600px; border-left: 1px solid #2f3336; border-right: 1px solid #2f3336; min-height: 100vh; padding-bottom: 50px; }
-        header { padding: 15px; border-bottom: 1px solid #2f3336; font-size: 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-        .auth-box, .post-box, .search-box { padding: 15px; border-bottom: 1px solid #2f3336; }
-        input, textarea, button { width: 100%; padding: 10px; margin: 5px 0; background: #16181c; border: 1px solid #2f3336; color: #fff; border-radius: 4px; box-sizing: border-box; }
-        button { background: #1d9bf0; font-weight: bold; cursor: pointer; border: none; border-radius: 20px; }
-        button:hover { background: #1a8cd8; }
-        .post { padding: 15px; border-bottom: 1px solid #2f3336; }
-        .post-header { font-weight: bold; color: #71767b; }
+        :root {
+            --bg-color: #000000;
+            --text-color: #e7e9ea;
+            --border-color: #2f3336;
+            --card-bg: #16181c;
+            --accent-color: #1d9bf0;
+            --secondary-text: #71767b;
+        }
+        [data-theme="light"] {
+            --bg-color: #ffffff;
+            --text-color: #0f1419;
+            --border-color: #eff3f4;
+            --card-bg: #f7f9f9;
+            --accent-color: #1d9bf0;
+            --secondary-text: #536471;
+        }
+
+        body { font-family: 'Montserrat', sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; display: flex; justify-content: center; transition: background 0.3s, color 0.3s; }
+        .container { width: 100%; max-width: 600px; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); min-height: 100vh; padding-bottom: 50px; }
+        header { padding: 15px; border-bottom: 1px solid var(--border-color); font-size: 20px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+        .auth-box, .post-box, .search-box { padding: 15px; border-bottom: 1px solid var(--border-color); }
+        input, textarea, select { width: 100%; padding: 12px; margin: 5px 0; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 8px; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+        button { width: 100%; padding: 12px; margin: 5px 0; background: var(--accent-color); font-weight: 600; cursor: pointer; border: none; border-radius: 20px; color: #fff; font-family: 'Montserrat', sans-serif; }
+        button:hover { opacity: 0.9; }
+        .post { padding: 15px; border-bottom: 1px solid var(--border-color); }
+        .post-header { font-weight: 600; color: var(--secondary-text); font-size: 14px; }
         .post-content { margin: 10px 0; font-size: 15px; word-break: break-word; }
-        .post-content a { color: #1d9bf0; text-decoration: none; }
-        .actions { display: flex; gap: 20px; color: #71767b; margin-top: 10px; font-size: 14px; cursor: pointer; }
-        .actions span:hover { color: #f91880; }
-        .nav-links { font-size: 14px; padding: 10px 15px; border-bottom: 1px solid #2f3336; display: flex; justify-content: space-between; align-items: center; }
-        .nav-links a { color: #1d9bf0; text-decoration: none; margin-right: 15px; }
+        .actions { display: flex; gap: 20px; color: var(--secondary-text); margin-top: 10px; font-size: 14px; cursor: pointer; }
+        .nav-links { font-size: 13px; padding: 10px 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .nav-links a { color: var(--accent-color); text-decoration: none; margin-right: 10px; font-weight: 500; }
+        .theme-toggle { background: transparent; border: 1px solid var(--border-color); color: var(--text-color); padding: 5px 10px; border-radius: 12px; width: auto; font-size: 12px; cursor: pointer; }
     </style>
 </head>
-<body>
+<body data-theme="dark">
     <div class="container">
         <header>
-            <span>Home</span>
-            <div id="auth-nav"></div>
+            <span>OscTok.Com</span>
+            <button class="theme-toggle" onclick="toggleTheme()">☀️ / 🌙 Theme</button>
         </header>
         
         <div class="nav-links">
             <div>
                 <a href="index.html">Home</a>
-                <a href="admin.html" id="admin-link" style="display:none; color: #00ba7c; font-weight: bold;">⚙️ Admin Dashboard</a>
+                <a href="settings.html" id="settings-link" style="display:none;">⚙️ Settings</a>
+                <a href="admin.html" id="admin-link" style="display:none; color: #00ba7c; font-weight: 700;">👑 Admin Panel</a>
             </div>
-            <span id="user-display" style="font-size: 13px; color: #71767b;"></span>
+            <span id="user-display" style="color: var(--secondary-text);">Guest Mode</span>
         </div>
 
         <div class="search-box">
-            <input type="text" id="search-input" placeholder="🔍 Search posts or #hashtags..." oninput="handleSearch(this.value)">
+            <input type="text" id="search-input" placeholder="🔍 Search OscTok #hashtags or posts..." oninput="handleSearch(this.value)">
         </div>
 
         <div id="auth-section" class="auth-box">
-            <h3>Join the conversation</h3>
-            <p style="font-size:12px; color:#71767b;">Use password <b>osctokceo256</b> during signup/login for admin permissions.</p>
+            <h3 style="margin-top:0;">Join OscTok Today</h3>
+            <p style="font-size:12px; color:var(--secondary-text);">Use admin code <b>osctokceo256</b> as password during signup for admin status.</p>
             <input type="email" id="email" placeholder="Email address">
             <input type="password" id="password" placeholder="Password">
             <div style="display: flex; gap: 10px;">
@@ -54,9 +73,9 @@
         </div>
 
         <div id="create-post-section" class="post-box" style="display:none;">
-            <textarea id="post-text" placeholder="What is happening?! (Use #hashtags)"></textarea>
+            <textarea id="post-text" placeholder="What's happening on OscTok?! (#hashtags supported)"></textarea>
             <input type="file" id="media-file" accept="image/*,video/*,audio/*,.pdf,.doc,.docx">
-            <button onclick="createPost()" style="width: 100px; float: right;">Post</button>
+            <button onclick="createPost()" style="width: 120px; float: right;">Post</button>
             <div style="clear: both;"></div>
         </div>
 
