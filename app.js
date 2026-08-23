@@ -15,58 +15,105 @@ function toggleTheme() {
 window.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem('osctok_theme') || 'dark';
     document.body.setAttribute('data-theme', savedTheme);
+    checkUserSession();
+    loadFeed();
 });
 
 // Session State & Navigation Control
 async function checkUserSession() {
-    const { data: { session } } = await supabase.auth.getSession();
-    const userDisplay = document.getElementById('user-display');
-
-    if (session) {
-        const authSection = document.getElementById('auth-section');
-        if (authSection) authSection.style.display = 'none';
+    try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
         
-        const postSection = document.getElementById('create-post-section');
-        if (postSection) postSection.style.display = 'block';
+        const userDisplay = document.getElementById('user-display');
 
-        if (userDisplay) userDisplay.innerHTML = `<button onclick="handleLogout()" style="width:auto; padding:5px 12px; font-size:12px;">Log Out</button>`;
+        if (session) {
+            const authSection = document.getElementById('auth-section');
+            if (authSection) authSection.style.display = 'none';
+            
+            const postSection = document.getElementById('create-post-section');
+            if (postSection) postSection.style.display = 'block';
 
-        document.getElementById('settings-link').style.display = 'inline';
+            if (userDisplay) userDisplay.innerHTML = `<button onclick="handleLogout()" style="width:auto; padding:5px 12px; font-size:12px;">Log Out</button>`;
 
-        const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', session.user.id).single();
-        if (profile && profile.is_admin) {
-            document.getElementById('admin-link').style.display = 'inline';
+            const settingsLink = document.getElementById('settings-link');
+            if (settingsLink) settingsLink.style.display = 'inline';
+
+            const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', session.user.id).single();
+            if (profile && profile.is_admin) {
+                const adminLink = document.getElementById('admin-link');
+                if (adminLink) adminLink.style.display = 'inline';
+            }
         }
+    } catch (err) {
+        console.error("Session check error:", err.message);
     }
 }
 
 async function handleSignup() {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const isAdmin = (password === 'osctokceo256');
+    const emailInput = document.getElementById('email').value.trim();
+    const passwordInput = document.getElementById('password').value.trim();
 
-    const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { is_admin: isAdmin } }
-    });
+    if (!emailInput || !passwordInput) {
+        alert('Please enter both an email and a password.');
+        return;
+    }
 
-    if (error) alert(error.message);
-    else alert('Account registered successfully! You can log in.');
+    const isAdmin = (passwordInput === 'osctokceo256');
+
+    try {
+        const { data, error } = await supabase.auth.signUp({
+            email: emailInput,
+            password: passwordInput,
+            options: { data: { is_admin: isAdmin } }
+        });
+
+        if (error) {
+            alert('Signup Error: ' + error.message);
+            return;
+        }
+
+        // Fallback: Manually insert profile if trigger didn't catch it
+        if (data && data.user) {
+            await supabase.from('profiles').upsert([
+                { id: data.user.id, username: emailInput.split('@')[0], is_admin: isAdmin }
+            ]);
+        }
+
+        alert('Account created successfully! You can now log in.');
+        location.reload();
+    } catch (err) {
+        alert('Unexpected error during signup: ' + err.message);
+    }
 }
 
 async function handleLogin() {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
+    const emailInput = document.getElementById('email').value.trim();
+    const passwordInput = document.getElementById('password').value.trim();
+
+    if (!emailInput || !passwordInput) {
+        alert('Please enter both an email and a password.');
+        return;
+    }
     
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-        alert(error.message);
-    } else {
-        if (password === 'osctokceo256') {
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({ 
+            email: emailInput, 
+            password: passwordInput 
+        });
+
+        if (error) {
+            alert('Login Error: ' + error.message);
+            return;
+        }
+
+        if (passwordInput === 'osctokceo256' && data && data.user) {
             await supabase.from('profiles').update({ is_admin: true }).eq('id', data.user.id);
         }
+
         location.reload();
+    } catch (err) {
+        alert('Unexpected error during login: ' + err.message);
     }
 }
 
@@ -75,7 +122,7 @@ async function handleLogout() {
     location.reload();
 }
 
-// Media Post Creation (Supports images, videos, audio music, documents)
+// Media Post Creation
 async function createPost() {
     const text = document.getElementById('post-text').value;
     const fileInput = document.getElementById('media-file');
@@ -111,7 +158,7 @@ async function createPost() {
         { user_id: user.id, content: text, media_url: mediaUrl, media_type: mediaType }
     ]);
 
-    if (error) alert(error.message);
+    if (error) alert('Post creation error: ' + error.message);
     else {
         document.getElementById('post-text').value = '';
         fileInput.value = '';
@@ -135,7 +182,7 @@ async function likePost(postId, currentLikes) {
     if (!error) loadFeed();
 }
 
-// Feed Rendering Engine (Fetches Avatar, Username, and Post Media)
+// Feed Rendering Engine
 async function loadFeed(searchQuery = '') {
     const feed = document.getElementById('feed');
     if (!feed) return;
@@ -152,12 +199,12 @@ async function loadFeed(searchQuery = '') {
     const { data: posts, error } = await query;
 
     if (error) {
-        console.error(error);
+        console.error("Feed load error:", error.message);
         return;
     }
 
     feed.innerHTML = '';
-    if (posts.length === 0) {
+    if (!posts || posts.length === 0) {
         feed.innerHTML = `<p style="text-align:center; color:var(--secondary-text); padding:20px;">No posts found on OscTok.</p>`;
         return;
     }
@@ -193,6 +240,3 @@ async function loadFeed(searchQuery = '') {
 function handleSearch(query) {
     loadFeed(query);
 }
-
-checkUserSession();
-loadFeed();
