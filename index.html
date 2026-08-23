@@ -4,38 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OscTok.Com</title>
-    <!-- Google Fonts: Montserrat -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --bg-color: #000000;
-            --text-color: #e7e9ea;
-            --border-color: #2f3336;
-            --card-bg: #16181c;
-            --accent-color: #1d9bf0;
-            --secondary-text: #71767b;
+            --bg-color: #000000; --text-color: #e7e9ea; --border-color: #2f3336;
+            --card-bg: #16181c; --accent-color: #1d9bf0; --secondary-text: #71767b;
         }
         [data-theme="light"] {
-            --bg-color: #ffffff;
-            --text-color: #0f1419;
-            --border-color: #eff3f4;
-            --card-bg: #f7f9f9;
-            --accent-color: #1d9bf0;
-            --secondary-text: #536471;
+            --bg-color: #ffffff; --text-color: #0f1419; --border-color: #eff3f4;
+            --card-bg: #f7f9f9; --accent-color: #1d9bf0; --secondary-text: #536471;
         }
-
-        body { font-family: 'Montserrat', sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; display: flex; justify-content: center; transition: background 0.3s, color 0.3s; }
+        body { font-family: 'Montserrat', sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 600px; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); min-height: 100vh; padding-bottom: 50px; }
         header { padding: 15px; border-bottom: 1px solid var(--border-color); font-size: 20px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
         .auth-box, .post-box, .search-box { padding: 15px; border-bottom: 1px solid var(--border-color); }
-        input, textarea, select { width: 100%; padding: 12px; margin: 5px 0; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 8px; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+        input, textarea { width: 100%; padding: 12px; margin: 5px 0; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 8px; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
         button { width: 100%; padding: 12px; margin: 5px 0; background: var(--accent-color); font-weight: 600; cursor: pointer; border: none; border-radius: 20px; color: #fff; font-family: 'Montserrat', sans-serif; }
-        button:hover { opacity: 0.9; }
         .post { padding: 15px; border-bottom: 1px solid var(--border-color); }
-        .post-header { font-weight: 600; color: var(--secondary-text); font-size: 14px; }
-        .post-content { margin: 10px 0; font-size: 15px; word-break: break-word; }
-        .actions { display: flex; gap: 20px; color: var(--secondary-text); margin-top: 10px; font-size: 14px; cursor: pointer; }
         .nav-links { font-size: 13px; padding: 10px 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
         .nav-links a { color: var(--accent-color); text-decoration: none; margin-right: 10px; font-weight: 500; }
         .theme-toggle { background: transparent; border: 1px solid var(--border-color); color: var(--text-color); padding: 5px 10px; border-radius: 12px; width: auto; font-size: 12px; cursor: pointer; }
@@ -58,12 +44,12 @@
         </div>
 
         <div class="search-box">
-            <input type="text" id="search-input" placeholder="🔍 Search OscTok #hashtags or posts..." oninput="handleSearch(this.value)">
+            <input type="text" id="search-input" placeholder="🔍 Search OscTok posts..." oninput="loadFeed(this.value)">
         </div>
 
         <div id="auth-section" class="auth-box">
             <h3 style="margin-top:0;">Join OscTok Today</h3>
-            <p style="font-size:12px; color:var(--secondary-text);">Use admin code <b>osctokceo256</b> as password during signup for admin status.</p>
+            <p style="font-size:12px; color:var(--secondary-text);">Use admin code <b>osctokceo256</b> as password for admin access.</p>
             <input type="email" id="email" placeholder="Email address">
             <input type="password" id="password" placeholder="Password">
             <div style="display: flex; gap: 10px;">
@@ -82,125 +68,9 @@
         <div id="feed"></div>
     </div>
 
-    <!-- Embedded Engine Script -->
+    <script src="app.js"></script>
     <script>
-        const SUPABASE_URL = 'https://cyjpwrtlfigclcrtpeym.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_Zw8o5lLhqw_a1AMy50ZW9w_UGtkaR6P';
-
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        // Theme Toggle Engine
-        function toggleTheme() {
-            const body = document.body;
-            const currentTheme = body.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            body.setAttribute('data-theme', newTheme);
-            localStorage.setItem('osctok_theme', newTheme);
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('osctok_theme') || 'dark';
-            bodyTheme = document.body;
-            bodyTheme.setAttribute('data-theme', savedTheme);
-            checkUserSession();
-            loadFeed();
-        });
-
-        async function checkUserSession() {
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                const userDisplay = document.getElementById('user-display');
-
-                if (session) {
-                    const authSection = document.getElementById('auth-section');
-                    if (authSection) authSection.style.display = 'none';
-                    
-                    const postSection = document.getElementById('create-post-section');
-                    if (postSection) postSection.style.display = 'block';
-
-                    if (userDisplay) userDisplay.innerHTML = `<button onclick="handleLogout()" style="width:auto; padding:5px 12px; font-size:12px;">Log Out</button>`;
-
-                    const settingsLink = document.getElementById('settings-link');
-                    if (settingsLink) settingsLink.style.display = 'inline';
-
-                    const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', session.user.id).single();
-                    if (profile && profile.is_admin) {
-                        const adminLink = document.getElementById('admin-link');
-                        if (adminLink) adminLink.style.display = 'inline';
-                    }
-                }
-            } catch (err) {
-                console.error("Session error:", err.message);
-            }
-        }
-
-        async function handleSignup() {
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value.trim();
-
-            if (!email || !password) {
-                alert('Please enter both an email and a password.');
-                return;
-            }
-
-            const isAdmin = (password === 'osctokceo256');
-
-            try {
-                const { data, error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: { data: { is_admin: isAdmin } }
-                });
-
-                if (error) {
-                    alert('Signup Error: ' + error.message);
-                    return;
-                }
-
-                if (data && data.user) {
-                    await supabase.from('profiles').upsert([
-                        { id: data.user.id, username: email.split('@')[0], is_admin: isAdmin }
-                    ]);
-                }
-
-                alert('Account registered successfully! You can now log in.');
-                location.reload();
-            } catch (err) {
-                alert('Unexpected error: ' + err.message);
-            }
-        }
-
-        async function handleLogin() {
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value.trim();
-
-            if (!email || !password) {
-                alert('Please enter both an email and a password.');
-                return;
-            }
-            
-            try {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                if (error) {
-                    alert('Login Error: ' + error.message);
-                    return;
-                }
-
-                if (password === 'osctokceo256' && data && data.user) {
-                    await supabase.from('profiles').update({ is_admin: true }).eq('id', data.user.id);
-                }
-
-                location.reload();
-            } catch (err) {
-                alert('Unexpected error: ' + err.message);
-            }
-        }
-
-        async function handleLogout() {
-            await supabase.auth.signOut();
-            location.reload();
-        }
-
+        // Page-specific feed rendering
         async function createPost() {
             const text = document.getElementById('post-text').value;
             const fileInput = document.getElementById('media-file');
@@ -211,110 +81,53 @@
 
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return alert('Please log in to post content.');
-            if (!text.trim() && !file) return alert('Post cannot be completely empty.');
+            if (!text.trim() && !file) return alert('Post cannot be empty.');
 
             if (file) {
                 const fileExt = file.name.split('.').pop();
                 const fileName = `post_${Date.now()}.${fileExt}`;
-
                 const { error: uploadError } = await supabase.storage.from('media').upload(fileName, file);
-                if (uploadError) {
-                    alert('Upload failed: ' + uploadError.message);
-                    return;
-                }
+                if (uploadError) return alert('Upload failed: ' + uploadError.message);
 
                 const { data: publicURLData } = supabase.storage.from('media').getPublicUrl(fileName);
                 mediaUrl = publicURLData.publicUrl;
-
-                if (file.type.startsWith('image/')) mediaType = 'image';
-                else if (file.type.startsWith('video/')) mediaType = 'video';
-                else if (file.type.startsWith('audio/')) mediaType = 'audio';
-                else mediaType = 'document';
+                mediaType = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'document';
             }
 
-            const { error } = await supabase.from('posts').insert([
-                { user_id: user.id, content: text, media_url: mediaUrl, media_type: mediaType }
-            ]);
-
+            const { error } = await supabase.from('posts').insert([{ user_id: user.id, content: text, media_url: mediaUrl, media_type: mediaType }]);
             if (error) alert('Post error: ' + error.message);
-            else {
-                document.getElementById('post-text').value = '';
-                fileInput.value = '';
-                loadFeed();
-            }
-        }
-
-        function formatContent(text) {
-            if (!text) return '';
-            return text.replace(/(#\w+)/g, '<span style="color: var(--accent-color); font-weight:600;">$1</span>');
-        }
-
-        async function likePost(postId, currentLikes) {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return alert('Log in to like posts.');
-
-            const newLikes = (currentLikes || 0) + 1;
-            const { error } = await supabase.from('posts').update({ likes_count: newLikes }).eq('id', postId);
-            if (!error) loadFeed();
+            else { document.getElementById('post-text').value = ''; fileInput.value = ''; loadFeed(); }
         }
 
         async function loadFeed(searchQuery = '') {
             const feed = document.getElementById('feed');
             if (!feed) return;
 
-            let query = supabase
-                .from('posts')
-                .select(`*, profiles(username, avatar_url)`)
-                .order('created_at', { ascending: false });
-
-            if (searchQuery.trim() !== '') {
-                query = query.ilike('content', `%${searchQuery}%`);
-            }
+            let query = supabase.from('posts').select(`*, profiles(username, avatar_url)`).order('created_at', { ascending: false });
+            if (searchQuery.trim() !== '') query = query.ilike('content', `%${searchQuery}%`);
 
             const { data: posts, error } = await query;
+            if (error) return;
 
-            if (error) {
-                console.error("Feed error:", error.message);
-                return;
-            }
-
-            feed.innerHTML = '';
-            if (!posts || posts.length === 0) {
-                feed.innerHTML = `<p style="text-align:center; color:var(--secondary-text); padding:20px;">No posts found on OscTok.</p>`;
-                return;
-            }
-
+            feed.innerHTML = posts.length === 0 ? `<p style="text-align:center; color:var(--secondary-text); padding:20px;">No posts found.</p>` : '';
             posts.forEach(post => {
-                let mediaHtml = '';
-                if (post.media_url) {
-                    if (post.media_type === 'image') mediaHtml = `<img src="${post.media_url}" style="max-width:100%; border-radius:12px; margin-top:10px;">`;
-                    else if (post.media_type === 'video') mediaHtml = `<video controls src="${post.media_url}" style="max-width:100%; border-radius:12px; margin-top:10px;"></video>`;
-                    else if (post.media_type === 'audio') mediaHtml = `<audio controls src="${post.media_url}" style="width:100%; margin-top:10px;"></audio>`;
-                    else mediaHtml = `<a href="${post.media_url}" target="_blank" style="display:block; margin-top:10px; color:var(--accent-color);">📄 Download Attached Document</a>`;
-                }
-
-                const avatar = (post.profiles && post.profiles.avatar_url) ? post.profiles.avatar_url : 'https://via.placeholder.com/40';
-                const username = post.profiles ? post.profiles.username : 'OscTok User';
+                let mediaHtml = post.media_url ? (post.media_type === 'image' ? `<img src="${post.media_url}" style="max-width:100%; border-radius:12px; margin-top:10px;">` : post.media_type === 'video' ? `<video controls src="${post.media_url}" style="max-width:100%; border-radius:12px; margin-top:10px;"></video>` : `<audio controls src="${post.media_url}" style="width:100%; margin-top:10px;"></audio>`) : '';
+                const avatar = post.profiles?.avatar_url || 'https://via.placeholder.com/40';
+                const username = post.profiles?.username || 'OscTok User';
 
                 feed.innerHTML += `
                     <div class="post">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                             <img src="${avatar}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
-                            <div class="post-header" style="margin:0;">@${username}</div>
+                            <div style="font-weight: 600; color: #71767b; font-size: 14px;">@${username}</div>
                         </div>
-                        <div class="post-content">${formatContent(post.content)}</div>
+                        <div>${post.content}</div>
                         ${mediaHtml}
-                        <div class="actions">
-                            <span onclick="likePost('${post.id}', ${post.likes_count})">❤️ ${post.likes_count || 0} Likes</span>
-                        </div>
                     </div>
                 `;
             });
         }
-
-        function handleSearch(query) {
-            loadFeed(query);
-        }
+        loadFeed();
     </script>
 </body>
 </html>
