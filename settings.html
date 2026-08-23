@@ -18,20 +18,15 @@
 <body>
     <div class="container">
         <div class="back-nav"><a href="index.html">← Back to OscTok Feed</a></div>
-        <h2>Account Settings & Profile</h2>
-        
+        <h2>Account Settings</h2>
         <div class="card">
-            <h3>Profile Customization</h3>
-            <img id="current-avatar" class="avatar-preview" src="" alt="Avatar Preview" style="display:none;">
+            <img id="current-avatar" class="avatar-preview" src="" alt="Avatar" style="display:none;">
             <label>Profile Picture:</label>
             <input type="file" id="avatar-file" accept="image/*">
-            
             <label>Username Handle:</label>
             <input type="text" id="setting-username" placeholder="Username">
-            
             <label>Bio Description:</label>
-            <textarea id="setting-bio" placeholder="Tell the world about yourself..."></textarea>
-            
+            <textarea id="setting-bio" placeholder="Bio..."></textarea>
             <button onclick="saveProfileSettings()">Save Changes</button>
         </div>
     </div>
@@ -40,11 +35,7 @@
     <script>
         window.addEventListener('DOMContentLoaded', async () => {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                alert('Please log in first.');
-                window.location.href = 'index.html';
-                return;
-            }
+            if (!user) { alert('Please log in first.'); window.location.href = 'index.html'; return; }
             const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
             if (profile) {
                 document.getElementById('setting-username').value = profile.username || '';
@@ -61,22 +52,13 @@
             const { data: { user } } = await supabase.auth.getUser();
             const username = document.getElementById('setting-username').value;
             const bio = document.getElementById('setting-bio').value;
-            const avatarInput = document.getElementById('avatar-file');
-            const file = avatarInput.files[0];
-
+            const file = document.getElementById('avatar-file').files[0];
             let avatarUrl = null;
 
             if (file) {
-                const fileExt = file.name.split('.').pop();
-                const fileName = `avatar_${user.id}_${Date.now()}.${fileExt}`;
-                const { error: uploadError } = await supabase.storage.from('media').upload(fileName, file);
-                
-                if (uploadError) {
-                    alert('Avatar upload failed: ' + uploadError.message);
-                    return;
-                }
-                const { data: publicURLData } = supabase.storage.from('media').getPublicUrl(fileName);
-                avatarUrl = publicURLData.publicUrl;
+                const fileName = `avatar_${user.id}_${Date.now()}.${file.name.split('.').pop()}`;
+                await supabase.storage.from('media').upload(fileName, file);
+                avatarUrl = supabase.storage.from('media').getPublicUrl(fileName).data.publicUrl;
             }
 
             const updateData = { username, bio };
@@ -84,10 +66,7 @@
 
             const { error } = await supabase.from('profiles').update(updateData).eq('id', user.id);
             if (error) alert('Error: ' + error.message);
-            else {
-                alert('Profile updated successfully!');
-                location.reload();
-            }
+            else { alert('Profile updated!'); location.reload(); }
         }
     </script>
 </body>
