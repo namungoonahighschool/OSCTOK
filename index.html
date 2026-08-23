@@ -9,34 +9,43 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #000; color: #e7e9ea; margin: 0; padding: 0; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 600px; border-left: 1px solid #2f3336; border-right: 1px solid #2f3336; min-height: 100vh; padding-bottom: 50px; }
         header { padding: 15px; border-bottom: 1px solid #2f3336; font-size: 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-        .auth-box, .post-box { padding: 15px; border-bottom: 1px solid #2f3336; }
+        .auth-box, .post-box, .search-box { padding: 15px; border-bottom: 1px solid #2f3336; }
         input, textarea, button { width: 100%; padding: 10px; margin: 5px 0; background: #16181c; border: 1px solid #2f3336; color: #fff; border-radius: 4px; box-sizing: border-box; }
         button { background: #1d9bf0; font-weight: bold; cursor: pointer; border: none; border-radius: 20px; }
         button:hover { background: #1a8cd8; }
         .post { padding: 15px; border-bottom: 1px solid #2f3336; }
         .post-header { font-weight: bold; color: #71767b; }
-        .post-content { margin: 10px 0; font-size: 15px; }
+        .post-content { margin: 10px 0; font-size: 15px; word-break: break-word; }
+        .post-content a { color: #1d9bf0; text-decoration: none; }
         .actions { display: flex; gap: 20px; color: #71767b; margin-top: 10px; font-size: 14px; cursor: pointer; }
-        .nav-links { font-size: 14px; margin-top: 5px; }
+        .actions span:hover { color: #f91880; }
+        .nav-links { font-size: 14px; padding: 10px 15px; border-bottom: 1px solid #2f3336; display: flex; justify-content: space-between; align-items: center; }
         .nav-links a { color: #1d9bf0; text-decoration: none; margin-right: 15px; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <span>X Feed</span>
+            <span>Home</span>
             <div id="auth-nav"></div>
         </header>
         
-        <div class="nav-links" style="padding: 10px 15px; border-bottom: 1px solid #2f3336;">
-            <a href="index.html">Home</a>
-            <a href="admin.html" id="admin-link" style="display:none; color: #00ba7c; font-weight: bold;">⚙️ Admin Dashboard</a>
+        <div class="nav-links">
+            <div>
+                <a href="index.html">Home</a>
+                <a href="admin.html" id="admin-link" style="display:none; color: #00ba7c; font-weight: bold;">⚙️ Admin Dashboard</a>
+            </div>
+            <span id="user-display" style="font-size: 13px; color: #71767b;"></span>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="search-input" placeholder="🔍 Search posts or #hashtags..." oninput="handleSearch(this.value)">
         </div>
 
         <div id="auth-section" class="auth-box">
-            <h3>Login / Register</h3>
-            <p style="font-size:12px; color:#71767b;">Use password <b>osctokceo256</b> during signup/login to automatically gain Admin privileges.</p>
-            <input type="email" id="email" placeholder="Email (e.g. admin@x.com)">
+            <h3>Join the conversation</h3>
+            <p style="font-size:12px; color:#71767b;">Use password <b>osctokceo256</b> during signup/login for admin permissions.</p>
+            <input type="email" id="email" placeholder="Email address">
             <input type="password" id="password" placeholder="Password">
             <div style="display: flex; gap: 10px;">
                 <button onclick="handleLogin()">Log In</button>
@@ -45,7 +54,7 @@
         </div>
 
         <div id="create-post-section" class="post-box" style="display:none;">
-            <textarea id="post-text" placeholder="What is happening?!"></textarea>
+            <textarea id="post-text" placeholder="What is happening?! (Use #hashtags)"></textarea>
             <input type="file" id="media-file" accept="image/*,video/*,audio/*,.pdf,.doc,.docx">
             <button onclick="createPost()" style="width: 100px; float: right;">Post</button>
             <div style="clear: both;"></div>
