@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Settings - OscTok.Com</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background: #000; color: #fff; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 600px; }
+        .card { background: #16181c; padding: 20px; margin-bottom: 15px; border-radius: 12px; border: 1px solid #2f3336; }
+        input, textarea, button { width: 100%; padding: 12px; margin: 8px 0; background: #000; border: 1px solid #2f3336; color: #fff; border-radius: 8px; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+        button { background: #1d9bf0; cursor: pointer; border: none; font-weight: 600; }
+        .back-nav a { color: #1d9bf0; text-decoration: none; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-nav"><a href="index.html">← Back to OscTok Feed</a></div>
+        <h2>Account Settings & Privacy</h2>
+        
+        <div class="card">
+            <h3>Profile Customization</h3>
+            <label>Username Handle:</label>
+            <input type="text" id="setting-username" placeholder="Username">
+            <label>Bio Description:</label>
+            <textarea id="setting-bio" placeholder="Tell the world about yourself..."></textarea>
+            <button onclick="saveProfileSettings()">Save Changes</button>
+        </div>
+
+        <div class="card">
+            <h3>Safety & Privacy</h3>
+            <p style="font-size: 13px; color: #71767b;">Manage visibility, block tools, and content security configurations.</p>
+            <label><input type="checkbox" id="private-profile"> Make Profile Private</label>
+            <button onclick="alert('Privacy settings updated successfully!')" style="margin-top:15px;">Update Security</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                alert('Please log in first.');
+                window.location.href = 'index.html';
+                return;
+            }
+            const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+            if (profile) {
+                document.getElementById('setting-username').value = profile.username || '';
+                document.getElementById('setting-bio').value = profile.bio || '';
+            }
+        });
+
+        async function saveProfileSettings() {
+            const { data: { user } } = await supabase.auth.getUser();
+            const username = document.getElementById('setting-username').value;
+            const bio = document.getElementById('setting-bio').value;
+
+            const { error } = await supabase.from('profiles').update({ username, bio }).eq('id', user.id);
+            if (error) alert('Error: ' + error.message);
+            else alert('Profile updated successfully!');
+        }
+    </script>
+</body>
+</html>
