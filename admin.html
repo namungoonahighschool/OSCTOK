@@ -2,25 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Panel - X.com</title>
+    <title>Admin Dashboard - OscTok.Com</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #000; color: #fff; padding: 20px; display: flex; justify-content: center; }
+        body { font-family: 'Montserrat', sans-serif; background: #000; color: #fff; padding: 20px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 800px; }
         .card { background: #16181c; padding: 15px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #2f3336; }
-        input, button { padding: 8px; margin: 5px 0; background: #000; border: 1px solid #2f3336; color: #fff; border-radius: 4px; }
-        button { background: #1d9bf0; cursor: pointer; border: none; font-weight: bold; }
+        input, button { padding: 10px; margin: 5px 0; background: #000; border: 1px solid #2f3336; color: #fff; border-radius: 4px; font-family: 'Montserrat', sans-serif; }
+        button { background: #1d9bf0; cursor: pointer; border: none; font-weight: 600; }
         .back-nav { margin-bottom: 20px; }
-        .back-nav a { color: #1d9bf0; text-decoration: none; }
+        .back-nav a { color: #1d9bf0; text-decoration: none; font-weight: 500; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-nav"><a href="index.html">← Back to Feed</a></div>
-        <h1>Platform Admin Dashboard</h1>
-        <div id="admin-content">
-            <p>Verifying administrative credentials...</p>
-        </div>
+        <div class="back-nav"><a href="index.html">← Back to OscTok Feed</a></div>
+        <h1>👑 OscTok Admin Panel</h1>
+        <div id="admin-content"><p>Verifying administrative clearance...</p></div>
     </div>
 
     <script src="app.js"></script>
@@ -34,7 +33,7 @@
 
             const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
             if (!profile || !profile.is_admin) {
-                document.getElementById('admin-content').innerHTML = '<p style="color:#f4212e;">Access Denied. Admin privileges required.</p>';
+                document.getElementById('admin-content').innerHTML = '<p style="color:#f4212e;">Access Denied. Admins only.</p>';
                 return;
             }
 
@@ -48,11 +47,9 @@
             users.forEach(u => {
                 html += `
                     <div class="card">
-                        <strong>User ID:</strong> ${u.id}<br>
-                        <strong>Username:</strong> @${u.username}<br>
-                        <label>Followers Count:</label> <input type="number" id="followers-${u.id}" value="${u.followers_count || 0}">
-                        <label>Following Count:</label> <input type="number" id="following-${u.id}" value="${u.following_count || 0}"><br>
-                        <button onclick="updateUserStats('${u.id}')">Save Metric Overrides</button>
+                        <strong>User:</strong> @${u.username} (${u.id})<br>
+                        <label>Followers Count:</label> <input type="number" id="followers-${u.id}" value="${u.followers_count || 0}"><br>
+                        <button onclick="updateUserStats('${u.id}')">Save Changes</button>
                     </div>
                 `;
             });
@@ -61,15 +58,9 @@
 
         async function updateUserStats(userId) {
             const newFollowers = parseInt(document.getElementById(`followers-${userId}`).value);
-            const newFollowing = parseInt(document.getElementById(`following-${userId}`).value);
-
-            const { error } = await supabase.from('profiles').update({
-                followers_count: newFollowers,
-                following_count: newFollowing
-            }).eq('id', userId);
-
-            if (error) alert('Error updating stats: ' + error.message);
-            else alert('User stats successfully updated!');
+            const { error } = await supabase.from('profiles').update({ followers_count: newFollowers }).eq('id', userId);
+            if (error) alert('Error: ' + error.message);
+            else alert('User followers updated successfully!');
         }
     </script>
 </body>
