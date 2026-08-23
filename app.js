@@ -31,7 +31,6 @@ async function checkUserSession() {
 
         if (userDisplay) userDisplay.innerHTML = `<button onclick="handleLogout()" style="width:auto; padding:5px 12px; font-size:12px;">Log Out</button>`;
 
-        // Enable links for settings & admin
         document.getElementById('settings-link').style.display = 'inline';
 
         const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', session.user.id).single();
@@ -76,7 +75,7 @@ async function handleLogout() {
     location.reload();
 }
 
-// Media Post Creation
+// Media Post Creation (Supports images, videos, audio music, documents)
 async function createPost() {
     const text = document.getElementById('post-text').value;
     const fileInput = document.getElementById('media-file');
@@ -91,7 +90,7 @@ async function createPost() {
 
     if (file) {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
+        const fileName = `post_${Date.now()}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage.from('media').upload(fileName, file);
         if (uploadError) {
@@ -136,14 +135,14 @@ async function likePost(postId, currentLikes) {
     if (!error) loadFeed();
 }
 
-// Feed Rendering Engine
+// Feed Rendering Engine (Fetches Avatar, Username, and Post Media)
 async function loadFeed(searchQuery = '') {
     const feed = document.getElementById('feed');
     if (!feed) return;
 
     let query = supabase
         .from('posts')
-        .select(`*, profiles(username)`)
+        .select(`*, profiles(username, avatar_url)`)
         .order('created_at', { ascending: false });
 
     if (searchQuery.trim() !== '') {
@@ -172,9 +171,15 @@ async function loadFeed(searchQuery = '') {
             else mediaHtml = `<a href="${post.media_url}" target="_blank" style="display:block; margin-top:10px; color:var(--accent-color);">📄 Download Attached Document</a>`;
         }
 
+        const avatar = (post.profiles && post.profiles.avatar_url) ? post.profiles.avatar_url : 'https://via.placeholder.com/40';
+        const username = post.profiles ? post.profiles.username : 'OscTok User';
+
         feed.innerHTML += `
             <div class="post">
-                <div class="post-header">@${post.profiles ? post.profiles.username : 'OscTok User'}</div>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <img src="${avatar}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
+                    <div class="post-header" style="margin:0;">@${username}</div>
+                </div>
                 <div class="post-content">${formatContent(post.content)}</div>
                 ${mediaHtml}
                 <div class="actions">
