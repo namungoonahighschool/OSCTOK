@@ -3,9 +3,25 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Zw8o5lLhqw_a1AMy50ZW9w_UGtkaR6P';
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Check Session & Control UI States
+// Theme Toggle Engine
+function toggleTheme() {
+    const body = document.body;
+    const currentTheme = body.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    body.setAttribute('data-theme', newTheme);
+    localStorage.setItem('osctok_theme', newTheme);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('osctok_theme') || 'dark';
+    document.body.setAttribute('data-theme', savedTheme);
+});
+
+// Session State & Navigation Control
 async function checkUserSession() {
     const { data: { session } } = await supabase.auth.getSession();
+    const userDisplay = document.getElementById('user-display');
+
     if (session) {
         const authSection = document.getElementById('auth-section');
         if (authSection) authSection.style.display = 'none';
@@ -13,14 +29,14 @@ async function checkUserSession() {
         const postSection = document.getElementById('create-post-section');
         if (postSection) postSection.style.display = 'block';
 
-        const authNav = document.getElementById('auth-nav');
-        if (authNav) authNav.innerHTML = `<button onclick="handleLogout()" style="width:auto; padding:5px 15px;">Log Out</button>`;
+        if (userDisplay) userDisplay.innerHTML = `<button onclick="handleLogout()" style="width:auto; padding:5px 12px; font-size:12px;">Log Out</button>`;
 
-        // Check if user is admin to display dashboard navigation link
+        // Enable links for settings & admin
+        document.getElementById('settings-link').style.display = 'inline';
+
         const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', session.user.id).single();
         if (profile && profile.is_admin) {
-            const adminLink = document.getElementById('admin-link');
-            if (adminLink) adminLink.style.display = 'inline';
+            document.getElementById('admin-link').style.display = 'inline';
         }
     }
 }
@@ -28,23 +44,16 @@ async function checkUserSession() {
 async function handleSignup() {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
-    
-    // Auto-detect if user typed the designated admin password
     const isAdmin = (password === 'osctokceo256');
 
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-            data: { is_admin: isAdmin }
-        }
+        options: { data: { is_admin: isAdmin } }
     });
 
     if (error) alert(error.message);
-    else {
-        alert('Signup successful! You can now log in.');
-        if (isAdmin) alert('Admin credentials detected! You will have administrative permissions.');
-    }
+    else alert('Account registered successfully! You can log in.');
 }
 
 async function handleLogin() {
@@ -55,11 +64,9 @@ async function handleLogin() {
     if (error) {
         alert(error.message);
     } else {
-        // Force admin sync if password matches master code
         if (password === 'osctokceo256') {
             await supabase.from('profiles').update({ is_admin: true }).eq('id', data.user.id);
         }
-        alert('Logged in successfully!');
         location.reload();
     }
 }
@@ -79,7 +86,8 @@ async function createPost() {
     let mediaType = null;
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return alert('You must be logged in to post.');
+    if (!user) return alert('Please log in to post content.');
+    if (!text.trim() && !file) return alert('Post cannot be completely empty.');
 
     if (file) {
         const fileExt = file.name.split('.').pop();
@@ -87,7 +95,7 @@ async function createPost() {
 
         const { error: uploadError } = await supabase.storage.from('media').upload(fileName, file);
         if (uploadError) {
-            alert('Media upload failed: ' + uploadError.message);
+            alert('Upload failed: ' + uploadError.message);
             return;
         }
 
@@ -112,15 +120,37 @@ async function createPost() {
     }
 }
 
-// Load Social Timeline Feed
-async function loadFeed() {
+// Hashtag formatting
+function formatContent(text) {
+    if (!text) return '';
+    return text.replace(/(#\w+)/g, '<span style="color: var(--accent-color); font-weight:600;">$1</span>');
+}
+
+// Interactive Likes
+async function likePost(postId, currentLikes) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return alert('Log in to like posts.');
+
+    const newLikes = (currentLikes || 0) + 1;
+    const { error } = await supabase.from('posts').update({ likes_count: newLikes }).eq('id', postId);
+    if (!error) loadFeed();
+}
+
+// Feed Rendering Engine
+async function loadFeed(searchQuery = '') {
     const feed = document.getElementById('feed');
     if (!feed) return;
 
-    const { data: posts, error } = await supabase
+    let query = supabase
         .from('posts')
         .select(`*, profiles(username)`)
         .order('created_at', { ascending: false });
+
+    if (searchQuery.trim() !== '') {
+        query = query.ilike('content', `%${searchQuery}%`);
+    }
+
+    const { data: posts, error } = await query;
 
     if (error) {
         console.error(error);
@@ -128,28 +158,36 @@ async function loadFeed() {
     }
 
     feed.innerHTML = '';
+    if (posts.length === 0) {
+        feed.innerHTML = `<p style="text-align:center; color:var(--secondary-text); padding:20px;">No posts found on OscTok.</p>`;
+        return;
+    }
+
     posts.forEach(post => {
         let mediaHtml = '';
         if (post.media_url) {
             if (post.media_type === 'image') mediaHtml = `<img src="${post.media_url}" style="max-width:100%; border-radius:12px; margin-top:10px;">`;
             else if (post.media_type === 'video') mediaHtml = `<video controls src="${post.media_url}" style="max-width:100%; border-radius:12px; margin-top:10px;"></video>`;
             else if (post.media_type === 'audio') mediaHtml = `<audio controls src="${post.media_url}" style="width:100%; margin-top:10px;"></audio>`;
-            else mediaHtml = `<a href="${post.media_url}" target="_blank" style="display:block; margin-top:10px; color:#1d9bf0;">📄 Download Attached Document</a>`;
+            else mediaHtml = `<a href="${post.media_url}" target="_blank" style="display:block; margin-top:10px; color:var(--accent-color);">📄 Download Attached Document</a>`;
         }
 
         feed.innerHTML += `
             <div class="post">
-                <div class="post-header">@${post.profiles ? post.profiles.username : 'Anonymous'}</div>
-                <div class="post-content">${post.content || ''}</div>
+                <div class="post-header">@${post.profiles ? post.profiles.username : 'OscTok User'}</div>
+                <div class="post-content">${formatContent(post.content)}</div>
                 ${mediaHtml}
                 <div class="actions">
-                    <span>❤️ ${post.likes_count || 0} Likes</span>
+                    <span onclick="likePost('${post.id}', ${post.likes_count})">❤️ ${post.likes_count || 0} Likes</span>
                 </div>
             </div>
         `;
     });
 }
 
-// Initialization triggers
+function handleSearch(query) {
+    loadFeed(query);
+}
+
 checkUserSession();
 loadFeed();
