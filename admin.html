@@ -26,42 +26,18 @@
     <script>
         window.addEventListener('DOMContentLoaded', async () => {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                document.getElementById('admin-content').innerHTML = '<p style="color:#f4212e;">Please log in via the main page first.</p>';
-                return;
-            }
+            if (!user) { document.getElementById('admin-content').innerHTML = '<p style="color:#f4212e;">Please log in first.</p>'; return; }
 
             const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-            if (!profile || !profile.is_admin) {
-                document.getElementById('admin-content').innerHTML = '<p style="color:#f4212e;">Access Denied. Admins only.</p>';
-                return;
-            }
+            if (!profile || !profile.is_admin) { document.getElementById('admin-content').innerHTML = '<p style="color:#f4212e;">Access Denied. Admins only.</p>'; return; }
 
-            loadAdminData();
-        });
-
-        async function loadAdminData() {
             const { data: users } = await supabase.from('profiles').select('*');
-            let html = '<h3>User Management & Metric Overrides</h3>';
-            
+            let html = '<h3>User Management</h3>';
             users.forEach(u => {
-                html += `
-                    <div class="card">
-                        <strong>User:</strong> @${u.username} (${u.id})<br>
-                        <label>Followers Count:</label> <input type="number" id="followers-${u.id}" value="${u.followers_count || 0}"><br>
-                        <button onclick="updateUserStats('${u.id}')">Save Changes</button>
-                    </div>
-                `;
+                html += `<div class="card"><strong>@${u.username}</strong><br>ID: ${u.id}</div>`;
             });
             document.getElementById('admin-content').innerHTML = html;
-        }
-
-        async function updateUserStats(userId) {
-            const newFollowers = parseInt(document.getElementById(`followers-${userId}`).value);
-            const { error } = await supabase.from('profiles').update({ followers_count: newFollowers }).eq('id', userId);
-            if (error) alert('Error: ' + error.message);
-            else alert('User followers updated successfully!');
-        }
+        });
     </script>
 </body>
 </html>
